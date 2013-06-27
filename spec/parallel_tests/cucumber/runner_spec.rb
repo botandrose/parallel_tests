@@ -172,6 +172,13 @@ EOF
       call(results).should == "3 scenarios (1 failed, 1 pending, 1 passed)\n3 steps (1 failed, 1 pending, 1 passed)"
     end
 
+    it "collates failing scenarios" do
+      results = ["Failing Scenarios:", "cucumber features/failure:1", "cucumber features/failure:2",
+                 "Failing Scenarios:", "cucumber features/failure:3", "cucumber features/failure:4",
+                 "Failing Scenarios:", "cucumber features/failure:5", "cucumber features/failure:6"]
+      call(results).should == "Failing Scenarios:\ncucumber features/failure:1\ncucumber features/failure:2\ncucumber features/failure:3\ncucumber features/failure:4\ncucumber features/failure:5\ncucumber features/failure:6\n\n"
+    end
+
     it "does not pluralize 1" do
       call(["1 scenario (1 passed)", "1 step (1 passed)"]).should == "1 scenario (1 passed)\n1 step (1 passed)"
     end

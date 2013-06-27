@@ -46,16 +46,33 @@ module ParallelTests
         end
 
         def line_is_result?(line)
-          line =~ /^\d+ (steps?|scenarios?)/
+          line =~ /^(\d+ (steps?|scenarios?)|cucumber features\/.+:\d+)/
+        end
+
+        def find_results(test_output)
+          test_output.split("\n").map {|line|
+            line = line.gsub(/\e\[\d+m/,'')
+            next unless line_is_result?(line)
+            line
+          }.compact
         end
 
         # cucumber has 2 result lines per test run, that cannot be added
         # 1 scenario (1 failed)
         # 1 step (1 failed)
         def summarize_results(results)
+          output = []
+
+          failing_scenarios = results.grep /^cucumber features\/.+:\d+/
+          if failing_scenarios.any?
+            failing_scenarios.unshift("Failing Scenarios:")
+
+            output << failing_scenarios.join("\n")
+          end
+
           sort_order = %w[scenario step failed undefined skipped pending passed]
 
-          %w[scenario step].map do |group|
+          output << %w[scenario step].map do |group|
             group_results = results.grep /^\d+ #{group}/
             next if group_results.empty?
 
@@ -67,6 +84,8 @@ module ParallelTests
             end
             "#{sums[0]} (#{sums[1..-1].join(", ")})"
           end.compact.join("\n")
+
+          output.join("\n\n")
         end
 
         def cucumber_opts(given)
