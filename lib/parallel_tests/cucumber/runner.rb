@@ -52,14 +52,6 @@ module ParallelTests
           [COUNTS_REGEX, FAILING_SCENARIO_REGEX].any? { |regex| line =~ regex }
         end
 
-        def find_results(test_output)
-          test_output.split("\n").map {|line|
-            line = line.gsub(/\e\[\d+m/,'')
-            next unless line_is_result?(line)
-            line
-          }.compact
-        end
-
         def summarize_results(results)
           [
             summarize_failing_scenarios(results),

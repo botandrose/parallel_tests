@@ -31,6 +31,8 @@ module ParallelTests
         end
 
         def line_is_result?(line)
+          # filter out .F* from results line in case the results are scrambled from another run
+          line.gsub!(/[.F*]/,'')
           line =~ /\d+ failure/
         end
 
@@ -72,7 +74,7 @@ module ParallelTests
 
         def find_results(test_output)
           test_output.split("\n").map {|line|
-            line = line.gsub(/\.|F|\*/,'').gsub(/\e\[\d+m/,'')
+            line.gsub!(/\e\[\d+m/,'')
             next unless line_is_result?(line)
             line
           }.compact
