@@ -60,6 +60,7 @@ describe ParallelTests::RSpec::RuntimeLogger do
 
   context "integration" do
     around do |example|
+      @lib_dir = File.expand_path("./lib")
       Dir.mktmpdir do |dir|
         Dir.chdir(dir, &example)
       end
@@ -88,7 +89,7 @@ describe ParallelTests::RSpec::RuntimeLogger do
         RUBY
       end
 
-      system("TEST_ENV_NUMBER=1 rspec spec -I #{Bundler.root.join("lib")} --format ParallelTests::RSpec::RuntimeLogger --out runtime.log 2>&1") || raise("nope")
+      system("TEST_ENV_NUMBER=1 rspec spec -I #{@lib_dir} --format ParallelTests::RSpec::RuntimeLogger --out runtime.log 2>&1") || raise("nope")
 
       result = File.read("runtime.log")
       result.should include "a_spec.rb:0.5"
@@ -117,7 +118,7 @@ describe ParallelTests::RSpec::RuntimeLogger do
         end
       RUBY
 
-      system("TEST_ENV_NUMBER=1 rspec spec -I #{Bundler.root.join("lib")} --format ParallelTests::RSpec::RuntimeLogger --out runtime.log 2>&1") || raise("nope")
+      system("TEST_ENV_NUMBER=1 rspec spec -I #{@lib_dir} --format ParallelTests::RSpec::RuntimeLogger --out runtime.log 2>&1") || raise("nope")
 
       result = File.read("runtime.log")
       result.should include "a_spec.rb:1.5"
