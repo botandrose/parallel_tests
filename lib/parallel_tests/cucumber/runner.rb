@@ -6,6 +6,9 @@ module ParallelTests
     class Runner < ParallelTests::Test::Runner
       NAME = 'Cucumber'
 
+      COUNTS_REGEX = /^\d+ (steps?|scenarios?)/
+      FAILING_SCENARIO_REGEX = /^cucumber features\/.+:\d+/
+
       class << self
         def run_tests(test_files, process_number, num_processes, options)
           sanitized_test_files = test_files.map { |val| Shellwords.escape(val) }
@@ -46,7 +49,7 @@ module ParallelTests
         end
 
         def line_is_result?(line)
-          line =~ /^(\d+ (steps?|scenarios?)|cucumber features\/.+:\d+)/
+          [COUNTS_REGEX, FAILING_SCENARIO_REGEX].any? { |regex| line =~ regex }
         end
 
         def find_results(test_output)
@@ -57,35 +60,11 @@ module ParallelTests
           }.compact
         end
 
-        # cucumber has 2 result lines per test run, that cannot be added
-        # 1 scenario (1 failed)
-        # 1 step (1 failed)
         def summarize_results(results)
-          output = []
-
-          failing_scenarios = results.grep /^cucumber features\/.+:\d+/
-          if failing_scenarios.any?
-            failing_scenarios.unshift("Failing Scenarios:")
-
-            output << failing_scenarios.join("\n")
-          end
-
-          sort_order = %w[scenario step failed undefined skipped pending passed]
-
-          output << %w[scenario step].map do |group|
-            group_results = results.grep /^\d+ #{group}/
-            next if group_results.empty?
-
-            sums = sum_up_results(group_results)
-            sums = sums.sort_by { |word, _| sort_order.index(word) || 999 }
-            sums.map! do |word, number|
-              plural = "s" if word == group and number != 1
-              "#{number} #{word}#{plural}"
-            end
-            "#{sums[0]} (#{sums[1..-1].join(", ")})"
-          end.compact.join("\n")
-
-          output.join("\n\n")
+          [
+            summarize_failing_scenarios(results),
+            summarize_counts(results)
+          ].compact.join("\n\n")
         end
 
         def cucumber_opts(given)
@@ -110,6 +89,36 @@ module ParallelTests
           else
             super
           end
+        end
+
+        private
+
+        def summarize_failing_scenarios(results)
+          failing_scenarios = results.grep FAILING_SCENARIO_REGEX
+          if failing_scenarios.any?
+            failing_scenarios.unshift("Failing Scenarios:")
+            failing_scenarios.join("\n")
+          end
+        end
+
+        # cucumber has 2 result lines per test run, that cannot be added
+        # 1 scenario (1 failed)
+        # 1 step (1 failed)
+        def summarize_counts(results)
+          sort_order = %w[scenario step failed undefined skipped pending passed]
+
+          %w[scenario step].map do |group|
+            group_results = results.grep /^\d+ #{group}/
+            next if group_results.empty?
+
+            sums = sum_up_results(group_results)
+            sums = sums.sort_by { |word, _| sort_order.index(word) || 999 }
+            sums.map! do |word, number|
+              plural = "s" if word == group and number != 1
+              "#{number} #{word}#{plural}"
+            end
+            "#{sums[0]} (#{sums[1..-1].join(", ")})"
+          end.compact.join("\n")
         end
       end
     end
